@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name='py-rtprio',
-	version='1.0',
+	version='1.1',
 	packages=['rtprio'],
 	author='Kyle Evans',
 	author_email='self@kyle-evans.net',
