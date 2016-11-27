@@ -5,11 +5,6 @@ from enum import Enum
 from os import strerror
 from sys import platform
 
-plat = platform.lower()
-
-if plat[:7] != 'freebsd' and plat[:12] != 'dragonflybsd':
-	raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
-
 # The following enums are derived from #define's in sys/rtprio.h
 class rtprio_func(Enum):
 	RTP_LOOKUP = 0
@@ -29,7 +24,10 @@ class rtprio_info(Structure):
 	_fields_ = [("type", c_ushort), ("prio", c_ushort)]
 
 # Load whichever libc is available on the system
-libc = CDLL(find_library('c'), use_errno=True)
+libc = find_library('c')
+
+if libc is not None:
+	libc = CDLL(libc, use_errno=True)
 
 def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
 	"""
@@ -42,6 +40,9 @@ def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
 	prio -- The magnitude of the priority to set, if setting a priority, between rtprio_prio.RTP_PRIO_{MIN,MAX} (default: None)
 	pid -- The pid to inspect/set priority for, or 0 for 'current thread'. (Default: 0)
 	"""
+	if not hasattr(libc, 'rtprio'):
+		raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
+
 	func = rtprio_func.RTP_LOOKUP
 
 	if prio is None:
