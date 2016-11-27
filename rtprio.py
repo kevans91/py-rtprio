@@ -10,6 +10,7 @@ plat = platform.lower()
 if plat[:7] != 'freebsd' and plat[:12] != 'dragonflybsd':
 	raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
 
+# The following enums are derived from #define's in sys/rtprio.h
 class rtprio_func(Enum):
 	RTP_LOOKUP = 0
 	RTP_SET = 1
@@ -23,12 +24,24 @@ class rtprio_types(Enum):
 	RTP_PRIO_NORMAL = 3
 	RTP_PRIO_IDLE = 4
 
+# Third param to rtprio(2)
 class rtprio_info(Structure):
 	_fields_ = [("type", c_ushort), ("prio", c_ushort)]
 
+# Load whichever libc is available on the system
 libc = CDLL(find_library('c'), use_errno=True)
 
 def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
+	"""
+	rtprio(2) interface that returns a tuple describing the priority of pid following this call.
+
+	If prio is None, an rtprio(2) lookup is done and type does not matter.
+
+	Keyword arguments:
+	type -- The type of priority to set, if applicable (default: rtprio_types.RTP_PRIO_REALTIME)
+	prio -- The magnitude of the priority to set, if setting a priority, between rtprio_prio.RTP_PRIO_{MIN,MAX} (default: None)
+	pid -- The pid to inspect/set priority for, or 0 for 'current thread'. (Default: 0)
+	"""
 	func = rtprio_func.RTP_LOOKUP
 
 	if prio is None:
