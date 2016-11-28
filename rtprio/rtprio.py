@@ -1,4 +1,4 @@
-from ctypes import CDLL, get_errno, c_ushort, Structure, pointer
+from ctypes import CDLL, get_errno, Structure, POINTER, pointer, c_ushort, c_int, c_int32
 from ctypes.util import find_library
 
 from enum import Enum
@@ -23,14 +23,17 @@ class rtprio_types(Enum):
 class rtprio_info(Structure):
 	_fields_ = [("type", c_ushort), ("prio", c_ushort)]
 
+def rtprio_exists():
+	return hasattr(libc, 'rtprio')
+
 # Load whichever libc is available on the system
 libc = find_library('c')
 
 if libc is not None:
 	libc = CDLL(libc, use_errno=True)
 
-def rtprio_exists():
-	return hasattr(libc, 'rtprio')
+	if rtprio_exists():
+		libc.rtprio.argtypes = [c_int, c_int32, POINTER(rtprio_info)]
 
 def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
 	"""
