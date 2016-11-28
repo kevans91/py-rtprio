@@ -29,6 +29,9 @@ libc = find_library('c')
 if libc is not None:
 	libc = CDLL(libc, use_errno=True)
 
+def rtprio_exists():
+	return hasattr(libc, 'rtprio')
+
 def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
 	"""
 	rtprio(2) interface that returns a tuple describing the priority of pid following this call.
@@ -40,7 +43,7 @@ def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
 	prio -- The magnitude of the priority to set, if setting a priority, between rtprio_prio.RTP_PRIO_{MIN,MAX} (default: None)
 	pid -- The pid to inspect/set priority for, or 0 for 'current thread'. (Default: 0)
 	"""
-	if not hasattr(libc, 'rtprio'):
+	if not rtprio_exists():
 		raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
 
 	func = rtprio_func.RTP_LOOKUP
