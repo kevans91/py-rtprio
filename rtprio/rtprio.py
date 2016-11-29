@@ -1,23 +1,24 @@
+from __future__ import absolute_import, unicode_literals
+
 from ctypes import CDLL, get_errno, Structure, POINTER, pointer, c_ushort, c_int, c_int32
 from ctypes.util import find_library
 
-from enum import Enum
 from os import strerror
 from sys import platform
 
-# The following enums are derived from #define's in sys/rtprio.h
-class rtprio_func(Enum):
-	RTP_LOOKUP = 0
-	RTP_SET = 1
+# Derived from #define's in sys/rtprio.h
+priorities = list(range(0, 32))
 
-class rtprio_prio(Enum):
-	RTP_PRIO_MIN = 0
-	RTP_PRIO_MAX = 31
+functions = {
+	"lookup": 0,
+	"set" : 1,
+}
 
-class rtprio_types(Enum):
-	RTP_PRIO_REALTIME = 2
-	RTP_PRIO_NORMAL = 3
-	RTP_PRIO_IDLE = 4
+types = {
+	"realtime": 2,
+	"normal": 3,
+	"idle": 4,
+}
 
 # Third param to rtprio(2)
 class rtprio_info(Structure):
@@ -35,33 +36,40 @@ if libc is not None:
 	if rtprio_exists():
 		libc.rtprio.argtypes = [c_int, c_int32, POINTER(rtprio_info)]
 
-def rtprio(type = rtprio_types.RTP_PRIO_REALTIME, prio = None, pid = 0):
+def rtprio(type = types['realtime'], prio = None, pid = 0):
 	"""
 	rtprio(2) interface that returns a tuple describing the priority of pid following this call.
 
 	If prio is None, an rtprio(2) lookup is done and type does not matter.
 
 	Keyword arguments:
-	type -- The type of priority to set, if applicable (default: rtprio_types.RTP_PRIO_REALTIME)
-	prio -- The magnitude of the priority to set, if setting a priority, between rtprio_prio.RTP_PRIO_{MIN,MAX} (default: None)
+	type -- The type of priority to set, if applicable (default: 'realtime', options: 'realtime', 'normal', 'idle')
+	prio -- The magnitude of the priority to set, if setting a priority, in interval [1,31]
 	pid -- The pid to inspect/set priority for, or 0 for 'current thread'. (Default: 0)
 	"""
 	if not rtprio_exists():
 		raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
 
-	func = rtprio_func.RTP_LOOKUP
+	if type in types.keys():
+		type = types[type]
+	elif type not in types.values():
+		raise ValueError('Invalid type ({}) passed in', type)
+ 
+	func = 'lookup'
 
 	if prio is None:
 		prio = 0
 	else:
-		func = rtprio_func.RTP_SET
-		if isinstance(prio, rtprio_prio):
-			prio = prio.value
-	
-	info = rtprio_info(type.value, prio)
-	ret = libc.rtprio(func.value, pid, pointer(info))
+		func = 'set'
+
+		if prio not in priorities:
+			raise ValueError('prio not in valid range [0,31]')
+
+	func = functions[func]
+	info = rtprio_info(type, prio)
+	ret = libc.rtprio(func, pid, pointer(info))
 
 	if ret != 0:
 		raise OSError(get_errno(), strerror(get_errno()))
 
-	return (rtprio_types(info.type), info.prio)
+	return (list(types.keys())[list(types.values()).index(info.type)], info.prio)

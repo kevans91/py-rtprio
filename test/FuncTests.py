@@ -1,3 +1,5 @@
+from __future__ import absolute_import, unicode_literals
+
 import unittest
 import rtprio
 from os import getpid, getuid
@@ -13,7 +15,7 @@ class FuncTests(unittest.TestCase):
 	def test_get_own(self):
 		mine = self.call_rtprio()
 
-		self.assertEqual(mine[0], rtprio.rtprio_types.RTP_PRIO_NORMAL)
+		self.assertEqual(mine[0], 'normal')
 
 			# This /could/ fail, but it is unlikely
 			# The system scheduler would have to bump
@@ -28,9 +30,9 @@ class FuncTests(unittest.TestCase):
 	def set_mine(self):
 		base_priority = 6
 		priority = base_priority
-		kern_ignores_prioval = [rtprio.rtprio_types.RTP_PRIO_NORMAL]
+		kern_ignores_prioval = ['normal']
 
-		for rtprio_type in rtprio.rtprio_types:
+		for rtprio_type in rtprio.types:
 				# Try changing it to the type requested
 			res = self.call_rtprio(type=rtprio_type, prio=priority)
 			self.assertEqual(res, (rtprio_type, priority))
