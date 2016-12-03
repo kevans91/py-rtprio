@@ -10,66 +10,66 @@ from sys import platform
 priorities = list(range(0, 32))
 
 functions = {
-	"lookup": 0,
-	"set" : 1,
+    "lookup": 0,
+    "set" : 1,
 }
 
 types = {
-	"realtime": 2,
-	"normal": 3,
-	"idle": 4,
+    "realtime": 2,
+    "normal": 3,
+    "idle": 4,
 }
 
 # Third param to rtprio(2)
 class rtprio_info(Structure):
-	_fields_ = [("type", c_ushort), ("prio", c_ushort)]
+    _fields_ = [("type", c_ushort), ("prio", c_ushort)]
 
 def rtprio_exists():
-	return hasattr(libc, 'rtprio')
+    return hasattr(libc, 'rtprio')
 
 # Load whichever libc is available on the system
 libc = find_library('c')
 
 if libc is not None:
-	libc = CDLL(libc, use_errno=True)
+    libc = CDLL(libc, use_errno=True)
 
-	if rtprio_exists():
-		libc.rtprio.argtypes = [c_int, c_int32, POINTER(rtprio_info)]
+    if rtprio_exists():
+        libc.rtprio.argtypes = [c_int, c_int32, POINTER(rtprio_info)]
 
-def rtprio(type = types['realtime'], prio = None, pid = 0):
-	"""
-	rtprio(2) interface that returns a tuple describing the priority of pid following this call.
+def rtprio(priotype=types['realtime'], prio=None, pid=0):
+    """
+    rtprio(2) interface that returns a tuple describing the priority of pid following this call.
 
-	If prio is None, an rtprio(2) lookup is done and type does not matter.
+    If prio is None, an rtprio(2) lookup is done and type does not matter.
 
-	Keyword arguments:
-	type -- The type of priority to set, if applicable (default: 'realtime', options: 'realtime', 'normal', 'idle')
-	prio -- The magnitude of the priority to set, if setting a priority, in interval [1,31]
-	pid -- The pid to inspect/set priority for, or 0 for 'current thread'. (Default: 0)
-	"""
-	if not rtprio_exists():
-		raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
+    Keyword arguments:
+    priotype -- The type of priority to set, if applicable (default: 'realtime', options: 'realtime', 'normal', 'idle')
+    prio -- The magnitude of the priority to set, if setting a priority, in interval [1,31]
+    pid -- The pid to inspect/set priority for, or 0 for 'current thread'. (Default: 0)
+    """
+    if not rtprio_exists():
+        raise NotImplementedError("rtprio(2) is not implemented for '{}'".format(platform))
 
-	if type in types.keys():
-		type = types[type]
-	elif type not in types.values():
-		raise ValueError('Invalid type ({}) passed in', type)
- 
-	func = 'lookup'
+    if priotype in types.keys():
+        priotype = types[type]
+    elif priotype not in types.values():
+        raise ValueError('Invalid type ({}) passed in', priotype)
 
-	if prio is None:
-		prio = 0
-	else:
-		func = 'set'
+    func = 'lookup'
 
-		if prio not in priorities:
-			raise ValueError('prio not in valid range [0,31]')
+    if prio is None:
+        prio = 0
+    else:
+        func = 'set'
 
-	func = functions[func]
-	info = rtprio_info(type, prio)
-	ret = libc.rtprio(func, pid, pointer(info))
+        if prio not in priorities:
+            raise ValueError('prio not in valid range [0,31]')
 
-	if ret != 0:
-		raise OSError(get_errno(), strerror(get_errno()))
+    func_value = functions[func]
+    info = rtprio_info(priotype, prio)
+    ret = libc.rtprio(func_value, pid, pointer(info))
 
-	return (list(types.keys())[list(types.values()).index(info.type)], info.prio)
+    if ret != 0:
+        raise OSError(get_errno(), strerror(get_errno()))
+
+    return (list(types.keys())[list(types.values()).index(info.type)], info.prio)
