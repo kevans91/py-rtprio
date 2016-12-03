@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
 	name='py-rtprio',
-	version='1.3.0',
+	version='1.3.1',
 	packages=['rtprio'],
 	description='rtprio(2) interface for altering process priority',
 	author='Kyle Evans',
